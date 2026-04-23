@@ -1,0 +1,398 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breathing App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        h1 {
+            color: white;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            padding: 10px 20px;
+            font-size: 1em;
+            border: 2px solid white;
+            border-radius: 25px;
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .mode-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .mode-btn.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .breathing-circle {
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.3), rgba(100, 200, 255, 0.8));
+            box-shadow: 0 0 60px rgba(255, 255, 255, 0.4),
+                        inset 0 0 60px rgba(100, 150, 255, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            transition: box-shadow 0.3s ease;
+            transform: scale(1);
+        }
+
+        .instructions {
+            position: absolute;
+            color: white;
+            font-size: 1.3em;
+            font-weight: 600;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+
+        .instructions.hold {
+            font-size: 1.5em;
+            letter-spacing: 2px;
+            animation: hold-pulse 0.6s ease infinite;
+        }
+
+        @keyframes hold-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .timer {
+            color: white;
+            font-size: 3em;
+            font-weight: bold;
+            min-width: 100px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .status {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.5em;
+            margin-top: 20px;
+            min-height: 40px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 50px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .info {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.95em;
+            margin-top: 15px;
+            max-width: 450px;
+            line-height: 1.6;
+        }
+
+        .pulse {
+            animation: pulse-text 0.5s ease;
+        }
+
+        @keyframes pulse-text {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Breathing Exercise</h1>
+        
+        <div class="mode-selector">
+            <button class="mode-btn active" onclick="setMode('simple')">Simple Breathing (5.5s)</button>
+            <button class="mode-btn" onclick="setMode('box')">Box Breathing (5-5-5-5)</button>
+        </div>
+
+        <div class="breathing-circle animating" id="breathingCircle">
+            <div class="instructions" id="instruction">Breathe In</div>
+        </div>
+
+        <div class="timer" id="timer">5.5</div>
+        <div class="status" id="status">Ready to begin</div>
+
+        <div class="controls">
+            <button onclick="toggleBreathe()">Start</button>
+            <button onclick="resetBreathe()">Reset</button>
+        </div>
+
+        <div class="info" id="info">
+            <p>💡 <strong>5.5 seconds per cycle</strong></p>
+            <p>5.5s breathe in • 5.5s breathe out</p>
+            <p>Focus and follow the circle's movement</p>
+        </div>
+    </div>
+
+    <script>
+        let isBreathing = false;
+        let timeRemaining = 5.5;
+        let animationFrameId = null;
+        let startTime = 0;
+        let pausedTime = 0;
+        let currentMode = 'simple';
+
+        // Simple breathing: 5.5s in, 5.5s out
+        const SIMPLE_BREATHE = {
+            inhale: 5.5,
+            exhale: 5.5,
+            cycle: 11
+        };
+
+        // Box breathing: 5s in, 5s hold, 5s out, 5s hold
+        const BOX_BREATHE = {
+            inhale: 5,
+            holdIn: 5,
+            exhale: 5,
+            holdOut: 5,
+            cycle: 20
+        };
+
+        const timerDisplay = document.getElementById('timer');
+        const instructionDisplay = document.getElementById('instruction');
+        const statusDisplay = document.getElementById('status');
+        const breathingCircle = document.getElementById('breathingCircle');
+        const infoDisplay = document.getElementById('info');
+        const startBtn = document.querySelectorAll('button')[2]; // Start/Pause button
+
+        function setMode(mode) {
+            if (isBreathing) {
+                pauseBreathe();
+            }
+            currentMode = mode;
+            resetBreathe();
+            
+            // Update button styling
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update circle animation class
+            breathingCircle.classList.remove('animating', 'box-breathing');
+            if (mode === 'simple') {
+                breathingCircle.classList.add('animating');
+                infoDisplay.innerHTML = '<p>💡 <strong>5.5 seconds per cycle</strong></p><p>5.5s breathe in • 5.5s breathe out</p><p>Focus and follow the circle\'s movement</p>';
+            } else {
+                breathingCircle.classList.add('box-breathing');
+                infoDisplay.innerHTML = '<p>💡 <strong>Box Breathing (20 seconds per cycle)</strong></p><p>5s in • 5s hold • 5s out • 5s hold</p><p>Focus and follow the circle\'s movement</p>';
+            }
+        }
+
+        function toggleBreathe() {
+            if (!isBreathing) {
+                startBreathe();
+            } else {
+                pauseBreathe();
+            }
+        }
+
+        function startBreathe() {
+            isBreathing = true;
+            startBtn.textContent = 'Pause';
+            statusDisplay.textContent = 'Breathing...';
+            startTime = Date.now() - pausedTime;
+            animate();
+        }
+
+        function pauseBreathe() {
+            isBreathing = false;
+            startBtn.textContent = 'Resume';
+            statusDisplay.textContent = 'Paused';
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+        }
+
+        function resetBreathe() {
+            isBreathing = false;
+            pausedTime = 0;
+            startBtn.textContent = 'Start';
+            statusDisplay.textContent = 'Ready to begin';
+            
+            if (currentMode === 'simple') {
+                instructionDisplay.textContent = 'Breathe In';
+                instructionDisplay.classList.remove('hold');
+                timerDisplay.textContent = '5.5';
+            } else {
+                instructionDisplay.textContent = 'Breathe In';
+                instructionDisplay.classList.remove('hold');
+                timerDisplay.textContent = '5.0';
+            }
+            
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+        }
+
+        function animateSimple() {
+            const elapsed = (Date.now() - startTime) / 1000;
+            const cyclePosition = elapsed % SIMPLE_BREATHE.cycle;
+
+            let scale = 1;
+            
+            if (cyclePosition < SIMPLE_BREATHE.inhale) {
+                // Breathing in: scale from 1 to 1.3
+                const progress = cyclePosition / SIMPLE_BREATHE.inhale;
+                scale = 1 + (0.3 * progress);
+                timeRemaining = SIMPLE_BREATHE.inhale - cyclePosition;
+                instructionDisplay.textContent = 'Breathe In';
+                instructionDisplay.classList.remove('hold');
+            } else {
+                // Breathing out: scale from 1.3 to 1
+                const progress = (cyclePosition - SIMPLE_BREATHE.inhale) / SIMPLE_BREATHE.exhale;
+                scale = 1.3 - (0.3 * progress);
+                timeRemaining = SIMPLE_BREATHE.exhale - (cyclePosition - SIMPLE_BREATHE.inhale);
+                instructionDisplay.textContent = 'Breathe Out';
+                instructionDisplay.classList.remove('hold');
+            }
+
+            breathingCircle.style.transform = `scale(${scale})`;
+            timerDisplay.textContent = Math.max(0, timeRemaining).toFixed(1);
+
+            if (isBreathing) {
+                animationFrameId = requestAnimationFrame(animateSimple);
+            }
+        }
+
+        function animateBox() {
+            const elapsed = (Date.now() - startTime) / 1000;
+            const cyclePosition = elapsed % BOX_BREATHE.cycle;
+
+            let phase = '';
+            let timeInPhase = 0;
+            let scale = 1;
+
+            if (cyclePosition < BOX_BREATHE.inhale) {
+                // Breathing in: scale from 1 to 1.3
+                const progress = cyclePosition / BOX_BREATHE.inhale;
+                scale = 1 + (0.3 * progress);
+                phase = 'Breathe In';
+                timeInPhase = cyclePosition;
+                timeRemaining = BOX_BREATHE.inhale - cyclePosition;
+                instructionDisplay.classList.remove('hold');
+            } else if (cyclePosition < BOX_BREATHE.inhale + BOX_BREATHE.holdIn) {
+                // Hold after inhale: stay at 1.3
+                scale = 1.3;
+                phase = 'Hold';
+                timeInPhase = cyclePosition - BOX_BREATHE.inhale;
+                timeRemaining = BOX_BREATHE.holdIn - timeInPhase;
+                instructionDisplay.classList.add('hold');
+            } else if (cyclePosition < BOX_BREATHE.inhale + BOX_BREATHE.holdIn + BOX_BREATHE.exhale) {
+                // Breathing out: scale from 1.3 to 1
+                const progress = (cyclePosition - (BOX_BREATHE.inhale + BOX_BREATHE.holdIn)) / BOX_BREATHE.exhale;
+                scale = 1.3 - (0.3 * progress);
+                phase = 'Breathe Out';
+                timeInPhase = cyclePosition - (BOX_BREATHE.inhale + BOX_BREATHE.holdIn);
+                timeRemaining = BOX_BREATHE.exhale - timeInPhase;
+                instructionDisplay.classList.remove('hold');
+            } else {
+                // Hold after exhale: stay at 1
+                scale = 1;
+                phase = 'Hold';
+                timeInPhase = cyclePosition - (BOX_BREATHE.inhale + BOX_BREATHE.holdIn + BOX_BREATHE.exhale);
+                timeRemaining = BOX_BREATHE.holdOut - timeInPhase;
+                instructionDisplay.classList.add('hold');
+            }
+
+            breathingCircle.style.transform = `scale(${scale})`;
+            instructionDisplay.textContent = phase;
+            timerDisplay.textContent = Math.max(0, timeRemaining).toFixed(1);
+
+            if (isBreathing) {
+                animationFrameId = requestAnimationFrame(animateBox);
+            }
+        }
+
+        function animate() {
+            if (currentMode === 'simple') {
+                animateSimple();
+            } else {
+                animateBox();
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                toggleBreathe();
+            }
+        });
+    </script>
+</body>
+</html>
